@@ -3,7 +3,6 @@ dist
 *.log
 .DS_Store
 .eslintcache
-.vscode
 # stryker temp files
 .stryker-tmp
 # istanbul code coverage
@@ -12,3 +11,4 @@ coverage
 reports
 *.tgz
 .tmp-earthly-out
+output

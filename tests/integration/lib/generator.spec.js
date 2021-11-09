@@ -1,5 +1,6 @@
-const mock = require("mock-fs");
-const path = require("path"); // to be loaded after mock-fs
+const mockfs = require("mock-fs");
+
+const path = require("path");
 const dirTree = require("directory-tree");
 
 const generateDocFromSchema = require("../../../src/lib/generator");
@@ -13,16 +14,18 @@ const EXPECT_PATH = path.join(
 
 describe("lib", () => {
   beforeEach(() => {
-    mock({
-      node_modules: mock.load(path.resolve(__dirname, "../../../node_modules")),
-      __data__: mock.load(path.resolve(__dirname, "../../__data__"), {
+    mockfs({
+      node_modules: mockfs.load(
+        path.resolve(__dirname, "../../../node_modules"),
+      ),
+      __data__: mockfs.load(path.resolve(__dirname, "../../__data__"), {
         lazy: false,
       }),
       output: {},
       assets: {
         "generated.md": "Dummy homepage for tweet.graphql",
-        "sidebar.json": mock.load(
-          require.resolve("../../../assets/sidebar.json"),
+        "sidebar.json": mockfs.load(
+          path.resolve(__dirname, "../../../assets/sidebar.json"),
           {
             lazy: false,
           },
@@ -33,7 +36,11 @@ describe("lib", () => {
   });
 
   afterEach(() => {
-    mock.restore();
+    mockfs.restore();
+  });
+
+  afterAll(() => {
+    mockfs.restore();
   });
 
   describe("renderer", () => {
@@ -59,15 +66,42 @@ describe("lib", () => {
           attributes: ["size", "type", "extension"],
         });
 
-        mock.restore(); // see https://github.com/tschaub/mock-fs#caveats
-
+        mockfs.restore(); // see https://github.com/tschaub/mock-fs#caveats
         expect(JSON.stringify(outputFolder, null, 2)).toMatchFile(
-          path.join(EXPECT_PATH, `generateDocFromSchemaOutputFolder.hash`),
+          path.join(EXPECT_PATH, "generateDocFromSchemaOutputFolder.hash"),
         );
         expect(JSON.stringify(tmpFolder, null, 2)).toMatchFile(
-          path.join(EXPECT_PATH, `generateDocFromSchemaTmpFolder.hash`),
+          path.join(EXPECT_PATH, "generateDocFromSchemaTmpFolder.hash"),
         );
       });
+    });
+
+    test("Markdown document structure from GraphQL schema is correct when using grouping", async () => {
+      expect.assertions(1);
+
+      await generateDocFromSchema({
+        baseURL: "graphql",
+        schemaLocation: "__data__/schema_with_grouping.graphql",
+        outputDir: "output",
+        linkRoot: "docs",
+        homepageLocation: "assets/generated.md",
+        diffMethod: "SCHEMA-DIFF",
+        tmpDir: "tmp",
+        loaders: {},
+        groupByDirective: {
+          directive: "doc",
+          field: "category",
+          fallback: "misc",
+        },
+      });
+      const outputFolder = dirTree("output", {
+        attributes: ["size", "type", "extension"],
+      });
+
+      mockfs.restore();
+      expect(JSON.stringify(outputFolder, null, 2)).toMatchFile(
+        path.join(EXPECT_PATH, `generateDocFromSchemaWithGroupingOutputFolder`),
+      );
     });
   });
 });

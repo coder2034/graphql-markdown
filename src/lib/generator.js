@@ -1,13 +1,14 @@
 const pico = require("picocolors");
+
 const { getSchemaMap, loadSchema, getDocumentLoaders } = require("./graphql");
 const Renderer = require("./renderer");
 const Printer = require("./printer");
-const { round } = require("./utils");
 const {
   checkSchemaChanges,
   saveSchemaHash,
   saveSchemaFile,
 } = require("./diff");
+const GroupInfo = require("./group-info");
 
 const time = process.hrtime();
 
@@ -20,34 +21,36 @@ module.exports = async function generateDocFromSchema({
   diffMethod,
   tmpDir,
   loaders,
+  groupByDirective,
 }) {
+  const { loaders: documentLoaders, loaderOptions } =
+    getDocumentLoaders(loaders);
   const schema = await loadSchema(schemaLocation, {
-    loaders: getDocumentLoaders(loaders),
+    loaders: documentLoaders,
+    ...loaderOptions,
   });
 
   const hasChanged = await checkSchemaChanges(schema, tmpDir, diffMethod);
 
   if (hasChanged) {
+    const rootTypes = getSchemaMap(schema);
+    const { group } = new GroupInfo(rootTypes, groupByDirective);
     const renderer = new Renderer(
-      new Printer(schema, baseURL, linkRoot),
+      new Printer(schema, baseURL, linkRoot, group),
       outputDir,
       baseURL,
+      group,
     );
-    const rootTypes = getSchemaMap(schema);
-
     const pages = await Promise.all(
-      Object.keys(rootTypes)
-        .map((typeName) =>
-          renderer.renderRootTypes(typeName, rootTypes[typeName]),
-        )
-        .flat(),
+      Object.keys(rootTypes).map((typeName) =>
+        renderer.renderRootTypes(typeName, rootTypes[typeName]),
+      ),
     );
-
     await renderer.renderHomepage(homepageLocation);
     const sidebarPath = await renderer.renderSidebar();
 
     const [sec, msec] = process.hrtime(time);
-    const duration = round(sec + msec / 1000000000, 3);
+    const duration = (sec + msec / 1e9).toFixed(3);
     console.info(
       pico.green(
         `Documentation successfully generated in "${outputDir}" with base URL "${baseURL}".`,
@@ -55,7 +58,9 @@ module.exports = async function generateDocFromSchema({
     );
     console.log(
       pico.blue(
-        `${pages.length} pages generated in ${duration}s from schema "${schemaLocation}".`,
+        `${
+          pages.flat().length
+        } pages generated in ${duration}s from schema "${schemaLocation}".`,
       ),
     );
     console.info(

@@ -3,7 +3,6 @@ slug: /
 ---
 # GraphQL Documentation Generator for Docusaurus 2
 
-[![npm](https://img.shields.io/npm/dt/@edno/docusaurus2-graphql-doc-generator?style=flat-square)](https://www.npmjs.com/package/@edno/docusaurus2-graphql-doc-generator)
 [![Latest Version](https://img.shields.io/npm/v/@edno/docusaurus2-graphql-doc-generator?style=flat-square)](https://www.npmjs.com/package/@edno/docusaurus2-graphql-doc-generator)
 [![GitHub License](https://img.shields.io/github/license/edno/docusaurus2-graphql-doc-generator?style=flat-square)](https://raw.githubusercontent.com/edno/docusaurus2-graphql-doc-generator/main/LICENSE)
 [![Coverage Status](https://img.shields.io/coveralls/github/edno/graphql-markdown?style=flat-square)](https://coveralls.io/github/edno/graphql-markdown?branch=main)
@@ -96,9 +95,15 @@ You can declare as many loaders as you need using the structure:
 type className = string; // UrlLoader
 
 type moduleName = string; // "@graphql-tools/url-loader"
+type moduleOptions = { [option: string]: any };
+
+type module = { 
+  module: moduleName, 
+  options: moduleOptions | undefined 
+}
 
 type loaders = {
-  [className: className]: moduleName
+  [className: className]: moduleName | module
 }
 ```
 
@@ -203,10 +208,27 @@ By default, the plugin will use the options as defined in the plugin's [configur
 | `schema`     | `-s, --schema <schema>`     | `./schema.graphql`                                          | The schema location. It should be compatible with the GraphQL Tools [schema loaders](https://www.graphql-tools.com/docs/schema-loading) (see [Loaders](#loaders)).                                                                                                                                                                                                                                                                                                                                  |
 | `tmpDir`     | `-t, --tmp <tmpDir>`        | _OS temp folder_                                            | The folder used for storing schema copy and signature used by `diffMethod`.                                                                                                                                                                                                                                                                                                                                                                                                                         |
 |              | `-f, --force`               | -                                                           | Force documentation generation (bypass diff).                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `groupByDirective`| `-gdb, --groupByDirective <@directive(field\|=fallback)>`               | -                                                           | Add grouping to documentation. This is accomplished by adding a directive to the types that you want grouped with a a field and a fallback option. An example is running -gbd @doc(category\| common)                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 #### About `diffMethod`
 
 The `diffMethod` is only used for identifying if the schema has changed. If a change is detected since last documentation generation, then the full schema documentation will be generated.
+#### About `groupByDirective`
+
+The `groupByDirective` is used to add grouping to the documentation to provide for an easier user experience to navigate. This is accomplished by adding a directive to all the types you want to have grouped. For example, let's say we have an education management company. We have two mutations called addCourse and dropCourse, and we want to group them together under a category called Courses. We can accomplish this by adding a directive and field to each mutation called doc and category. Also, we can add a fallback option called Common which is for types that we don't explictly add a directive to.
+```
+type Mutation{
+  AddCourse(input: String): String  @doc(category: "Course") 
+}
+
+type Mutation{
+  DropCourse(input: String): String  @doc(category: "Course") 
+}
+
+````
+An example of what the sidebar would look with this feature is:
+![Grouping Example](/assets/images/grouping_example.png)
+
 
 ## Troubleshooting
 
@@ -243,3 +265,5 @@ Contributions, issues and feature requests are very welcome. If you are using th
 </a>
 
 Made with [contributors-img](https://contrib.rocks).
+
+

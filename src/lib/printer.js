@@ -14,25 +14,22 @@ const {
   isInputType,
   isListType,
 } = require("./graphql");
-const {
-  toSlug,
-  hasProperty,
-  hasMethod,
-  pathUrl,
-  escapeMDX,
-} = require("./utils");
-const { prettifyMarkdown } = require("./prettier");
+
+const { toSlug, escapeMDX } = require("../utils/scalars/string");
+const { hasProperty, hasMethod } = require("../utils/scalars/object");
+const { pathUrl } = require("../utils/scalars/url");
+const { prettifyMarkdown } = require("../utils/helpers/prettier");
 
 const HEADER_SECTION_LEVEL = "###";
 const HEADER_SECTION_SUB_LEVEL = "####";
 const HEADER_SECTION_ITEM_LEVEL = "- #####";
 const NO_DESCRIPTION_TEXT = "No description";
-
 module.exports = class Printer {
-  constructor(schema, baseURL, linkRoot = "/") {
+  constructor(schema, baseURL, linkRoot = "/", group) {
     this.schema = schema;
     this.baseURL = baseURL;
     this.linkRoot = linkRoot;
+    this.group = group;
   }
 
   toLink(type, name) {
@@ -62,13 +59,17 @@ module.exports = class Printer {
         category = "directives";
         break;
     }
-
     if (category && graphLQLNamedType) {
+      name = graphLQLNamedType.name || graphLQLNamedType;
+      const group = toSlug(
+        hasProperty(this.group, name) ? this.group[name] : "",
+      );
       return `[\`${name}\`](${pathUrl.join(
         this.linkRoot,
         this.baseURL,
+        group,
         category,
-        toSlug(graphLQLNamedType),
+        toSlug(name),
       )})`;
     } else {
       return `\`${name}\``;
