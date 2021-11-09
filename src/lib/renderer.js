@@ -1,6 +1,6 @@
 const path = require("path");
 
-const { convertArrayToObject} = require("../utils/scalars/array");
+const { convertArrayToObject } = require("../utils/scalars/array");
 const { hasProperty } = require("../utils/scalars/object");
 const { toSlug, startCase } = require("../utils/scalars/string");
 const { pathUrl } = require("../utils/scalars/url");
@@ -41,23 +41,18 @@ module.exports = class Renderer {
     if (typeof type === "undefined" || type === null) {
       return undefined;
     }
-
     if (Array.isArray(type)) {
       type = convertArrayToObject(type);
     }
-
     return Promise.all(
       Object.keys(type).map(async (name) => {
         let dirPath = this.outputDir;
-
         if (hasProperty(this.group, name)) {
           dirPath = path.join(dirPath, toSlug(this.group[name]));
           await this.generateCategoryMetafile(this.group[name], dirPath);
         }
-
         dirPath = path.join(dirPath, toSlug(rootTypeName));
         await this.generateCategoryMetafile(rootTypeName, dirPath);
-
         return this.renderTypeEntities(dirPath, name, type[name]);
       }),
     );
@@ -67,7 +62,6 @@ module.exports = class Renderer {
     if (typeof type === "undefined" || type === null) {
       return undefined;
     }
-
     const fileName = toSlug(name);
     const filePath = path.join(path.normalize(dirPath), `${fileName}.mdx`);
 
